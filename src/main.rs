@@ -280,7 +280,7 @@ fn ui(f: &mut Frame, app: &App) {
         .collect();
 
     let upgrades = List::new(upgrade_items)
-        .block(Block::default().borders(Borders::ALL).title("Upgrades (↑/↓ to select, Enter to buy)"))
+        .block(Block::default().borders(Borders::ALL).title(format!("Upgrades - Gold: {} (↑/↓ select, Enter buy)", GameState::format_number(app.game_state.gold))))
         .highlight_style(Style::default().add_modifier(Modifier::BOLD))
         .highlight_symbol("► ");
     f.render_widget(upgrades, main_chunks[1]);
