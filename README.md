@@ -42,12 +42,6 @@ cargo run
 | Mine Shaft | 5,000 | 30.0 gold/sec | 1.15x |
 | Gold Factory | 25,000 | 100.0 gold/sec | 1.15x |
 
-## Dependencies
-
-* ratatui 0.26
-* crossterm 0.27
-* tokio 1.0
-
 ## License
 
 MIT License
