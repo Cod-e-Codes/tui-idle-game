@@ -66,6 +66,8 @@ struct GameState {
     last_update: Instant,
     total_clicks: u64,
     show_help: bool,
+    last_click: Instant,
+    click_cooldown: Duration,
 }
 
 impl Default for GameState {
@@ -87,6 +89,8 @@ impl Default for GameState {
             last_update: Instant::now(),
             total_clicks: 0,
             show_help: false,
+            last_click: Instant::now() - Duration::from_secs(1), // Allow immediate first click
+            click_cooldown: Duration::from_millis(500), // 0.5 second cooldown
         }
     }
 }
@@ -105,8 +109,12 @@ impl GameState {
     }
 
     fn click_for_gold(&mut self) {
-        self.gold += 1.0;
-        self.total_clicks += 1;
+        let now = Instant::now();
+        if now.duration_since(self.last_click) >= self.click_cooldown {
+            self.gold += 1.0;
+            self.total_clicks += 1;
+            self.last_click = now;
+        }
     }
 
     fn buy_selected(&mut self) {
@@ -221,7 +229,7 @@ fn ui(f: &mut Frame, app: &App) {
         Line::from(vec![
             Span::raw("Press "),
             Span::styled("SPACE", Style::default().fg(Color::Green).add_modifier(Modifier::BOLD)),
-            Span::raw(" to mine +1 gold")
+            Span::raw(" to mine +1 gold (0.5s cooldown)")
         ]),
         Line::from(""),
         Line::from(vec![
