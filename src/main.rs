@@ -109,14 +109,6 @@ impl GameState {
         self.total_clicks += 1;
     }
 
-    fn can_buy_selected(&self) -> bool {
-        if let Some(upgrade) = self.upgrades.get(self.selected_upgrade) {
-            upgrade.can_afford(self.gold)
-        } else {
-            false
-        }
-    }
-
     fn buy_selected(&mut self) {
         if let Some(upgrade) = self.upgrades.get_mut(self.selected_upgrade) {
             if upgrade.can_afford(self.gold) {
