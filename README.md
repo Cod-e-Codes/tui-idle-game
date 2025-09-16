@@ -1,5 +1,7 @@
 # TUI Idle Game
 
+<img src="tui-idle-game.jpg" alt="TUI Idle Game Screenshot" width="600">
+
 A terminal-based idle game built with Rust and ratatui. Players mine gold automatically and purchase upgrades to increase production rates.
 
 ## Features
