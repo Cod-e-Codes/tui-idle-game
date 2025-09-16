@@ -357,87 +357,73 @@ fn ui(f: &mut Frame, app: &App) {
     .alignment(Alignment::Center);
     f.render_widget(header, chunks[0]);
 
-    // Main content
+    // Main content - now full width instead of split
     let main_chunks = Layout::default()
-        .direction(Direction::Horizontal)
-        .constraints([Constraint::Percentage(50), Constraint::Percentage(50)].as_ref())
+        .direction(Direction::Vertical)
+        .constraints([Constraint::Length(1), Constraint::Min(1)].as_ref())
         .split(chunks[1]);
 
-    // Left side - Click area and progress
-    let left_chunks = Layout::default()
-        .direction(Direction::Vertical)
-        .constraints([Constraint::Min(5), Constraint::Length(5)].as_ref())
-        .split(main_chunks[0]);
+    // Tab indicator - full width
+    let current_tab_name = match app.game_state.current_tab {
+        Tab::Passive => "1-Passive Upgrades",
+        Tab::Click => "2-Click Upgrades", 
+        Tab::Achievements => "3-Achievements",
+    };
+    
+    let tab_indicator = Paragraph::new(current_tab_name)
+        .style(Style::default().bg(Color::Blue).fg(Color::White).add_modifier(Modifier::BOLD))
+        .alignment(Alignment::Center);
+    f.render_widget(tab_indicator, main_chunks[0]);
 
-    let click_area = Paragraph::new(vec![
-        Line::from(""),
-        Line::from(vec![
-            Span::styled("CLICK FOR GOLD!", Style::default().fg(Color::Yellow).add_modifier(Modifier::BOLD))
-        ]),
-        Line::from(""),
-        Line::from(vec![
-            Span::raw("Press "),
-            Span::styled("SPACE", Style::default().fg(Color::Green).add_modifier(Modifier::BOLD)),
-            Span::raw(" to mine +"),
-            Span::styled(GameState::format_number(app.game_state.click_power), Style::default().fg(Color::Yellow).add_modifier(Modifier::BOLD)),
-            Span::raw(" gold (0.5s cooldown)")
-        ]),
-        Line::from(""),
-        Line::from(vec![
-            Span::raw("Or just wait and earn "),
-            Span::styled(format!("{} gold/sec", GameState::format_number(app.game_state.gold_per_second)), Style::default().fg(Color::Green)),
-        ]),
-    ])
-    .block(Block::default().borders(Borders::ALL).title("Mining"))
-    .alignment(Alignment::Center)
-    .wrap(Wrap { trim: true });
-    f.render_widget(click_area, left_chunks[0]);
-
-    // Progress bar showing gold accumulation
-    let progress = (app.game_state.gold % 100.0) / 100.0;
-    let gauge = Gauge::default()
-        .block(Block::default().borders(Borders::ALL).title("Gold Progress"))
-        .gauge_style(Style::default().fg(Color::Yellow))
-        .percent((progress * 100.0) as u16)
-        .label(format!("{:.1}%", progress * 100.0));
-    f.render_widget(gauge, left_chunks[1]);
-
-    // Tab headers
-    let tab_titles = vec!["1-Passive", "2-Click", "3-Achievements"];
-    let tab_chunks = Layout::default()
-        .direction(Direction::Horizontal)
-        .constraints([Constraint::Percentage(33), Constraint::Percentage(33), Constraint::Percentage(34)].as_ref())
-        .split(main_chunks[1]);
-
-    for (i, title) in tab_titles.iter().enumerate() {
-        let tab_type = match i {
-            0 => Tab::Passive,
-            1 => Tab::Click,
-            _ => Tab::Achievements,
-        };
-        
-        let style = if app.game_state.current_tab == tab_type {
-            Style::default().bg(Color::Blue).fg(Color::White).add_modifier(Modifier::BOLD)
-        } else {
-            Style::default().fg(Color::Gray)
-        };
-
-        let tab = Paragraph::new(*title)
-            .style(style)
-            .alignment(Alignment::Center)
-            .block(Block::default().borders(Borders::ALL));
-        f.render_widget(tab, tab_chunks[i]);
-    }
-
-    // Content area below tabs
-    let content_area = Layout::default()
-        .direction(Direction::Vertical)
-        .constraints([Constraint::Length(3), Constraint::Min(1)].as_ref())
-        .split(main_chunks[1]);
-
-    // Right side content based on selected tab
+    // Content based on selected tab - now takes full width
     match app.game_state.current_tab {
         Tab::Passive | Tab::Click => {
+            // Split the content area for upgrades
+            let content_chunks = Layout::default()
+                .direction(Direction::Horizontal)
+                .constraints([Constraint::Percentage(50), Constraint::Percentage(50)].as_ref())
+                .split(main_chunks[1]);
+
+            // Left side - Click area and progress (only show when in click tab or as secondary info)
+            let left_chunks = Layout::default()
+                .direction(Direction::Vertical)
+                .constraints([Constraint::Min(5), Constraint::Length(5)].as_ref())
+                .split(content_chunks[0]);
+
+            let click_area = Paragraph::new(vec![
+                Line::from(""),
+                Line::from(vec![
+                    Span::styled("CLICK FOR GOLD!", Style::default().fg(Color::Yellow).add_modifier(Modifier::BOLD))
+                ]),
+                Line::from(""),
+                Line::from(vec![
+                    Span::raw("Press "),
+                    Span::styled("SPACE", Style::default().fg(Color::Green).add_modifier(Modifier::BOLD)),
+                    Span::raw(" to mine +"),
+                    Span::styled(GameState::format_number(app.game_state.click_power), Style::default().fg(Color::Yellow).add_modifier(Modifier::BOLD)),
+                    Span::raw(" gold (0.5s cooldown)")
+                ]),
+                Line::from(""),
+                Line::from(vec![
+                    Span::raw("Or just wait and earn "),
+                    Span::styled(format!("{} gold/sec", GameState::format_number(app.game_state.gold_per_second)), Style::default().fg(Color::Green)),
+                ]),
+            ])
+            .block(Block::default().borders(Borders::ALL).title("Mining"))
+            .alignment(Alignment::Center)
+            .wrap(Wrap { trim: true });
+            f.render_widget(click_area, left_chunks[0]);
+
+            // Progress bar showing gold accumulation
+            let progress = (app.game_state.gold % 100.0) / 100.0;
+            let gauge = Gauge::default()
+                .block(Block::default().borders(Borders::ALL).title("Gold Progress"))
+                .gauge_style(Style::default().fg(Color::Yellow))
+                .percent((progress * 100.0) as u16)
+                .label(format!("{:.1}%", progress * 100.0));
+            f.render_widget(gauge, left_chunks[1]);
+
+            // Right side - Upgrades list
             let current_upgrades = app.game_state.get_current_upgrades();
             let upgrade_items: Vec<ListItem> = current_upgrades
                 .iter()
@@ -479,20 +465,60 @@ fn ui(f: &mut Frame, app: &App) {
                 })
                 .collect();
 
-            let tab_name = match app.game_state.current_tab {
-                Tab::Passive => "Passive Upgrades",
-                Tab::Click => "Click Upgrades",
-                _ => "Upgrades",
-            };
-
             let upgrades = List::new(upgrade_items)
-                .block(Block::default().borders(Borders::ALL).title(format!("{} - Gold: {} (Up/Down select, Enter buy)", tab_name, GameState::format_number(app.game_state.gold))))
+                .block(Block::default().borders(Borders::ALL).title(format!("Gold: {} (Up/Down select, Enter buy)", GameState::format_number(app.game_state.gold))))
                 .highlight_style(Style::default().add_modifier(Modifier::BOLD))
                 .highlight_symbol("> ");
-            f.render_widget(upgrades, content_area[1]);
+            f.render_widget(upgrades, content_chunks[1]);
         }
 
         Tab::Achievements => {
+            // Split the content area for achievements - same as upgrades
+            let content_chunks = Layout::default()
+                .direction(Direction::Horizontal)
+                .constraints([Constraint::Percentage(50), Constraint::Percentage(50)].as_ref())
+                .split(main_chunks[1]);
+
+            // Left side - Click area and progress (same as other tabs)
+            let left_chunks = Layout::default()
+                .direction(Direction::Vertical)
+                .constraints([Constraint::Min(5), Constraint::Length(5)].as_ref())
+                .split(content_chunks[0]);
+
+            let click_area = Paragraph::new(vec![
+                Line::from(""),
+                Line::from(vec![
+                    Span::styled("CLICK FOR GOLD!", Style::default().fg(Color::Yellow).add_modifier(Modifier::BOLD))
+                ]),
+                Line::from(""),
+                Line::from(vec![
+                    Span::raw("Press "),
+                    Span::styled("SPACE", Style::default().fg(Color::Green).add_modifier(Modifier::BOLD)),
+                    Span::raw(" to mine +"),
+                    Span::styled(GameState::format_number(app.game_state.click_power), Style::default().fg(Color::Yellow).add_modifier(Modifier::BOLD)),
+                    Span::raw(" gold (0.5s cooldown)")
+                ]),
+                Line::from(""),
+                Line::from(vec![
+                    Span::raw("Or just wait and earn "),
+                    Span::styled(format!("{} gold/sec", GameState::format_number(app.game_state.gold_per_second)), Style::default().fg(Color::Green)),
+                ]),
+            ])
+            .block(Block::default().borders(Borders::ALL).title("Mining"))
+            .alignment(Alignment::Center)
+            .wrap(Wrap { trim: true });
+            f.render_widget(click_area, left_chunks[0]);
+
+            // Progress bar showing gold accumulation
+            let progress = (app.game_state.gold % 100.0) / 100.0;
+            let gauge = Gauge::default()
+                .block(Block::default().borders(Borders::ALL).title("Gold Progress"))
+                .gauge_style(Style::default().fg(Color::Yellow))
+                .percent((progress * 100.0) as u16)
+                .label(format!("{:.1}%", progress * 100.0));
+            f.render_widget(gauge, left_chunks[1]);
+
+            // Right side - Achievements list
             let achievement_items: Vec<ListItem> = app.game_state.achievements
                 .iter()
                 .enumerate()
@@ -542,10 +568,10 @@ fn ui(f: &mut Frame, app: &App) {
             let total_count = app.game_state.achievements.len();
 
             let achievements = List::new(achievement_items)
-                .block(Block::default().borders(Borders::ALL).title(format!("Achievements ({}/{}) - Long-term Goals", completed_count, total_count)))
+                .block(Block::default().borders(Borders::ALL).title(format!("Long-term Goals ({}/{})", completed_count, total_count)))
                 .highlight_style(Style::default().add_modifier(Modifier::BOLD))
                 .highlight_symbol("> ");
-            f.render_widget(achievements, content_area[1]);
+            f.render_widget(achievements, content_chunks[1]);
         }
     }
 
